@@ -16,6 +16,12 @@ class VTClient:
         self.timeout = timeout
         self.headers = {"x-apikey": self.api_key}
 
+    def _scrub_api_key(self, text: str) -> str:
+        """Redact API key from any string representation if present."""
+        if not text or not self.api_key:
+            return str(text) if text is not None else ""
+        return str(text).replace(self.api_key, "***")
+
     def fetch_ioc_report(self, ioc_info: dict) -> dict:
         """
         Fetch threat intelligence for an IOC dictionary produced by ioc_detector.
@@ -96,7 +102,7 @@ class VTClient:
             }
 
         except requests.RequestException as e:
-            err_msg = str(e).replace(self.api_key, "***") if self.api_key else str(e)
+            err_msg = self._scrub_api_key(str(e))
             return {
                 "status": "error",
                 "error_message": f"HTTP error occurred: {err_msg}",

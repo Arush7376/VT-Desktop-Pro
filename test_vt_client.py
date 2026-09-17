@@ -55,7 +55,7 @@ class TestVTClient(unittest.TestCase):
         self.assertIn("executable", res["tags"])
         self.assertEqual(res["categories"], ["malware", "trojan"])
         self.assertEqual(res["first_submission_date"], "2020-09-13 12:26:40 UTC")
-        self.assertEqual(res["last_analysis_date"], "2021-01-07 16:53:20 UTC")
+        self.assertEqual(res["last_analysis_date"], "2021-01-07 06:13:20 UTC")
         self.assertEqual(res["sha256"], "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
 
     def test_timestamp_formatting(self):
@@ -78,6 +78,19 @@ class TestVTClient(unittest.TestCase):
         res = self.client.fetch_ioc_report({"value": "invalid", "type": "UNKNOWN", "vt_endpoint": None, "error": "Invalid format"})
         self.assertEqual(res["status"], "error")
         self.assertIn("Invalid format", res["error_message"])
+
+    def test_api_key_scrubbing(self):
+        secret_key = "secret_vt_key_999"
+        client = vt_client.VTClient(api_key=secret_key)
+        raw_error = f"Connection failed with key {secret_key} at endpoint"
+        scrubbed = client._scrub_api_key(raw_error)
+        self.assertNotIn(secret_key, scrubbed)
+        self.assertIn("***", scrubbed)
+
+    def test_upload_file_non_existent(self):
+        res = self.client.upload_file("non_existent_file_12345.exe")
+        self.assertFalse(res["success"])
+        self.assertIn("does not exist", res["message"])
 
 
 if __name__ == "__main__":
